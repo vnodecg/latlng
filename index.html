@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LatLng</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .location-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .coordinate {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .coordinate label {
+            font-weight: 600;
+            color: #555;
+            font-size: 1.1em;
+        }
+
+        .coordinate-value {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 1em;
+            color: #333;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .get-location-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .get-location-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .get-location-btn:active {
+            transform: translateY(0);
+        }
+
+        .get-location-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .map-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: #17a2b8;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background 0.3s ease;
+            font-weight: 500;
+        }
+
+        .map-link:hover {
+            background: #138496;
+        }
+
+        .accuracy-info {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .features {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .feature {
+            margin: 10px 0;
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .feature::before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📍 Get Your Location</h1>
+        
+        <button class="get-location-btn" onclick="getLocation()" id="locationBtn">
+            Get My Location
+        </button>
+
+        <div id="status" class="status hidden"></div>
+        <div id="loadingSpinner" class="loading-spinner hidden"></div>
+
+        <div id="locationInfo" class="location-info hidden">
+            <div class="coordinate">
+                <label>Latitude:</label>
+                <div>
+                    <span class="coordinate-value" id="latitude">-</span>
+                    <button class="copy-btn" onclick="copyToClipboard('latitude')">Copy</button>
+                </div>
+            </div>
+            
+            <div class="coordinate">
+                <label>Longitude:</label>
+                <div>
+                    <span class="coordinate-value" id="longitude">-</span>
+                    <button class="copy-btn" onclick="copyToClipboard('longitude')">Copy</button>
+                </div>
+            </div>
+
+            <div class="coordinate">
+                <label>Coordinates:</label>
+                <div>
+                    <span class="coordinate-value" id="coordinates">-</span>
+                    <button class="copy-btn" onclick="copyToClipboard('coordinates')">Copy</button>
+                </div>
+            </div>
+
+            <div class="accuracy-info" id="accuracyInfo"></div>
+
+            <a id="mapLink" class="map-link hidden" target="_blank">
+                🗺️ View on Google Maps
+            </a>
+        </div>
+
+        <div class="features">
+            <div class="feature">High precision GPS coordinates</div>
+            <div class="feature">Copy coordinates with one click</div>
+            <div class="feature">Direct link to Google Maps</div>
+            <div class="feature">Privacy-focused - no data stored</div>
+        </div>
+    </div>
+
+    <script>
+        let userLatitude = null;
+        let userLongitude = null;
+
+        function getLocation() {
+            const statusDiv = document.getElementById('status');
+            const locationInfo = document.getElementById('locationInfo');
+            const locationBtn = document.getElementById('locationBtn');
+            const spinner = document.getElementById('loadingSpinner');
+
+            // Check if geolocation is supported
+            if (!navigator.geolocation) {
+                showStatus('Geolocation is not supported by this browser.', 'error');
+                return;
+            }
+
+            // Show loading state
+            locationBtn.disabled = true;
+            locationBtn.textContent = 'Getting Location...';
+            spinner.classList.remove('hidden');
+            locationInfo.classList.add('hidden');
+            showStatus('Requesting your location permission...', 'loading');
+
+            // Options for geolocation
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            };
+
+            // Get current position
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    // Success callback
+                    userLatitude = position.coords.latitude;
+                    userLongitude = position.coords.longitude;
+                    
+                    displayLocation(position);
+                    showStatus('Location retrieved successfully!', 'success');
+                    
+                    // Reset button
+                    locationBtn.disabled = false;
+                    locationBtn.textContent = 'Refresh Location';
+                    spinner.classList.add('hidden');
+                },
+                function(error) {
+                    // Error callback
+                    handleLocationError(error);
+                    
+                    // Reset button
+                    locationBtn.disabled = false;
+                    locationBtn.textContent = 'Try Again';
+                    spinner.classList.add('hidden');
+                },
+                options
+            );
+        }
+
+        function displayLocation(position) {
+            const lat = position.coords.latitude.toFixed(6);
+            const lng = position.coords.longitude.toFixed(6);
+            const accuracy = position.coords.accuracy;
+
+            // Update display elements
+            document.getElementById('latitude').textContent = lat;
+            document.getElementById('longitude').textContent = lng;
+            document.getElementById('coordinates').textContent = `${lat}, ${lng}`;
+            
+            // Show accuracy info
+            const accuracyInfo = document.getElementById('accuracyInfo');
+            accuracyInfo.textContent = `Accuracy: ±${Math.round(accuracy)} meters`;
+
+            // Create Google Maps link
+            const mapLink = document.getElementById('mapLink');
+            mapLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
+            mapLink.classList.remove('hidden');
+
+            // Show location info
+            document.getElementById('locationInfo').classList.remove('hidden');
+        }
+
+        function handleLocationError(error) {
+            let message = '';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = "Location access denied by user. Please enable location permissions.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = "Location information is unavailable. Please try again.";
+                    break;
+                case error.TIMEOUT:
+                    message = "Location request timed out. Please try again.";
+                    break;
+                default:
+                    message = "An unknown error occurred while retrieving location.";
+                    break;
+            }
+            
+            showStatus(message, 'error');
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.classList.remove('hidden');
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const textToCopy = element.textContent;
+            
+            // Use the modern Clipboard API if available
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showCopySuccess(element);
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(textToCopy, element);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyTextToClipboard(textToCopy, element);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text, element) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(element);
+                } else {
+                    showStatus('Failed to copy to clipboard', 'error');
+                }
+            } catch (err) {
+                showStatus('Failed to copy to clipboard', 'error');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccess(element) {
+            const originalText = element.textContent;
+            element.textContent = 'Copied!';
+            element.style.background = '#28a745';
+            
+            setTimeout(() => {
+                element.textContent = originalText;
+                element.style.background = '#e9ecef';
+            }, 1000);
+        }
+
+        // Add keyboard shortcut (Ctrl+L or Cmd+L) to get location
+        document.addEventListener('keydown', function(event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+                event.preventDefault();
+                getLocation();
+            }
+        });
+
+        // Show helpful tip about permissions
+        window.addEventListener('load', function() {
+            console.log('💡 Tip: Use Ctrl+L (or Cmd+L on Mac) to quickly get your location!');
+        });
+    </script>
+</body>
+</html>
